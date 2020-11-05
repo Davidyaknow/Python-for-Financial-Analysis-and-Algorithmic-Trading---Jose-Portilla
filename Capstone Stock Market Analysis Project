@@ -1,0 +1,250 @@
+"""
+Stock Market Analysis Project
+Please Note: You are free to treat this as a full exercise, or just view the solutions video as a code along project. This project is meant to be pretty challenging as it will introduce a few new concepts through some hints!
+Welcome to your first capstone project! This project is meant to cap off the first half of the course, which mainly dealt with learning the libraries that we use in this course, the second half of the course will deal a lot more with quantitative trading techniques and platforms.
+
+We'll be analyzing stock data related to a few car companies, from Jan 1 2012 to Jan 1 2017. Keep in mind that this project is mainly just to practice your skills with matplotlib, pandas, and numpy. Don't infer financial trading advice from the analysis we do here!
+
+Part 0: Import
+** Import the various libraries you will need-you can always just come back up here or import as you go along :) **
+"""
+
+
+import numpy as np 
+import pandas as pd
+import pandas_datareader
+import pandas_datareader.data as web
+import matplotlib.pyplot as plt
+%matplotlib inline
+from datetime import datetime
+from matplotlib import dates
+import seaborn as sns
+
+
+"""
+Part 1: Getting the Data
+Tesla Stock (Ticker: TSLA on the NASDAQ)
+** Note! Not everyone will be working on a computer that will give them open access to download the stock information using pandas_datareader (firewalls, admin permissions, etc...). Because of this, the csv file for the Tesla is provided in a data folder inside this folder. It is called Tesla_Stock.csv. Feel free to just use this with read_csv! *
+
+** Use pandas_datareader to obtain the historical stock information for Tesla from Jan 1, 2012 to Jan 1, 2017.**
+"""
+
+start = datetime(2012,1,1)
+end = datetime(2017,1,1)
+
+# Using web.DataReader as the API to pull stock data from Tesla, Ford and General Motors from Yahoo Finance.
+tesla = web.DataReader("TSLA","yahoo",start,end)
+ford = web.DataReader("F","yahoo",start,end)
+gm = web.DataReader("GM","yahoo",start,end)
+
+"""
+Part 2: Visualizing the Data
+** Time to visualize the data. **
+
+** Follow along and recreate the plots below according to the instructions and explanations. **
+
+** Recreate this linear plot of all the stocks' Open price ! Hint: For the legend, use label parameter and plt.legend()**
+"""
+"""
+Plot the Opening Prices of stock traded each day.
+"""
+
+tesla["Open"].plot(label = "Tesla", figsize = (16,8), title = "Opening Prices")
+ford["Open"].plot(label = "Ford")
+gm["Open"].plot(label = "General Motors")
+
+plt.legend(loc =0)
+plt.show()
+
+"""
+** Plot the Volume of stock traded each day.**
+"""
+
+tesla["Volume"].plot(label = "Tesla", figsize = (16,8), title = "Volume Traded")
+ford["Volume"].plot(label = "Ford")
+gm["Volume"].plot(label = "General Motors")
+
+plt.legend(loc = 0)
+
+"""
+** Interesting, looks like Ford had a really big spike somewhere in late 2013. What was the date of this maximum trading volume for Ford?**
+
+**Bonus: What happened that day? **
+"""
+# .idxmax() will give us the Timestamp for when the date index of the most volume traded occurred
+ford["Volume"].idxmax()
+ford["Open"].plot(figsize = (16,6), label = "Ford Open", title = "Ford Test")
+#https://www.autoblog.com/2013/12/18/ford-shares-fall-on-news-of-lower-profits/ This occurred. 
+
+"""
+** The Open Price Time Series Visualization makes Tesla look like its always been much more valuable as a company than GM and Ford. But to really understand this we would need to look at the total market cap of the company, not just the stock price. Unfortunately our current data doesn't have that information of total units of stock present. But what we can do as a simple calcualtion to try to represent total money traded would be to multply the Volume column by the Open price. Remember that this still isn't the actual Market Cap, its just a visual representation of the total amount of money being traded around using the time series. (e.g. 100 units of stock at 10𝑒𝑎𝑐ℎ𝑣𝑒𝑟𝑠𝑢𝑠100000𝑢𝑛𝑖𝑡𝑠𝑜𝑓𝑠𝑡𝑜𝑐𝑘𝑎𝑡1 each)**
+
+** Create a new column for each dataframe called "Total Traded" which is the Open Price multiplied by the Volume Traded.**
+"""
+
+tesla["Total Traded"] = tesla["Open"] * tesla["Volume"]
+ford["Total Traded"] = ford["Open"] * ford["Volume"]
+gm["Total Traded"] = gm["Open"] * gm["Volume"]
+
+
+"""
+** Plot this "Total Traded" against the time index.**
+"""
+
+tesla["Total Traded"].plot(label = "Tesla", figsize = (16,6), title = "Open * Volume")
+ford["Total Traded"].plot(label = "Ford")
+gm["Total Traded"].plot(label = "General Motors")
+
+plt.legend(loc = 0)
+
+"""
+** Interesting, looks like there was huge amount of money traded for Tesla somewhere in early 2014. What date was that and what happened? **
+"""
+
+tesla["Total Traded"].idxmax()
+#https://www.cnbc.com/2014/02/25/tesla-soars-ford-falls-in-consumer-reports-study.html - This occurred.
+
+"""
+** Let's practice plotting out some MA (Moving Averages). Plot out the MA50 and MA200 for GM. **
+"""
+
+gm["MA50"] = gm["Open"].rolling(window = 50).mean()
+gm["MA200"] = gm["Open"].rolling(window = 200).mean()
+
+gm[["Open","MA50","MA200"]].plot(figsize = (16,6), title = "GM Averages")
+
+plt.legend(loc = 0)
+
+"""
+** Finally lets see if there is a relationship between these stocks, after all, they are all related to the car industry. We can see this easily through a scatter matrix plot. Import scatter_matrix from pandas.plotting and use it to create a scatter matrix plot of all the stocks'opening price. You may need to rearrange the columns into a new single dataframe. Hints and info can be found here: https://pandas.pydata.org/pandas-docs/stable/visualization.html#scatter-matrix-plot **
+"""
+
+from pandas.plotting import scatter_matrix
+
+car_comp = pd.concat([tesla["Open"],ford["Open"],gm["Open"]],axis=1)
+car_comp.columns = ["Tesla","Ford","General Motors"]
+
+scatter_matrix(car_comp, figsize = (10,5), alpha = 0.8);
+
+"""
+Bonus Visualization Task! (Note: This is hard!)
+Let's now create a candlestick chart! Watch the video if you get stuck on trying to recreate this visualization, there are quite a few steps involved!Refer to the video to understand how to interpret and read this chart. Hints: https://matplotlib.org/examples/pylab_examples/finance_demo.html
+
+** Create a CandleStick chart for Ford in January 2012 (too many dates won't look good for a candlestick chart)**
+"""
+
+# Note! Matplotlib.finance is depreciated. The following are the updated imports as of November 5th, 2020. 
+from mplfinance.original_flavor import candlestick_ohlc # Candle Sticks for Open, High, Low, Close
+from matplotlib.dates import DateFormatter, date2num, WeekdayLocator , DayLocator, MONDAY
+
+ford_reset = ford.loc["2012-01].reset_index() # We're resetting the Date Column in order to re-add it into the column as the first index.
+ford_reset.info() # We can see the Date Column is still a datetime data type.
+
+ford_reset["date_ax"] = ford_reset["Date"].apply(lambda date: date2num(date))
+
+list_of_cols = ["date_ax","Open","High","Low","Close"]
+ford_values = [tuple(vals) for vals in ford_reset[list_of_cols].values]
+
+mondays = WeekdayLocator(MONDAY)
+alldays = DayLocator()
+weekFormatter = DateFormatter("%b %d")
+dayFormatter = DateFormatter("%d")
+
+fig, ax = plt.subplots(figsize = (16,6))
+fig.subplots_adjust(bottom=0.2)
+ax.xaxis.set_major_locator(mondays)
+ax.xaxis.set_minor_locator(alldays)
+ax.xaxis.set_minor_formatter(weekFormatter)
+
+plt.tight_layout()
+
+candlestick_ohlc(ax,ford_values, width=0.4,colorup="g",colordown="r")
+
+"""
+Part 3: Basic Financial Analysis
+Now it is time to focus on a few key financial calculations. This will serve as your transition to the second half of the course. All you need to do is follow along with the instructions, this will mainly be an exercise in converting a mathematical equation or concept into code using python and pandas, something we will do often when working with quantiative data! If you feel very lost in this section, don't worry! Just go to the solutions lecture and treat it as a code-along lecture, use whatever style of learning works best for you!
+
+Let's begin!
+"""
+
+
+"""
+** Create a new column for each dataframe called returns. This column will be calculated from the Close price column. There are two ways to do this, either a simple calculation using the .shift() method that follows the formula above, or you can also use pandas' built in pct_change method. **
+"""
+
+
+tesla["returns"] = tesla["Close"].pct_change(1)
+ford["returns"] = ford["Close"].pct_change(1)
+gm["returns"] = gm["Close"].pct_change(1)
+
+"""
+** Now plot a histogram of each companies returns. Either do them separately, or stack them on top of each other. Which stock is the most "volatile"? (as judged by the variance in the daily returns we will discuss volatility in a lot more detail in future lectures.)**
+"""
+
+ford["returns"].hist(bins = 100, figsize=(16,6),edgecolor="black",label = "Ford",alpha=0.3)
+gm["returns"].hist(bins=100,figsize=(16,6),edgecolor="black",label = "General Motors",alpha=0.4)
+tesla["returns"].hist(bins =100, figsize=(16,6), edgecolor= "black",label = "Tesla",alpha=0.2)
+plt.legend(loc=0)
+
+"""
+** Try also plotting a KDE instead of histograms for another view point. Which stock has the widest plot? **
+"""
+
+ford["returns"].plot(kind="kde", figsize=(16,6),label = "Ford",alpha=0.8)
+gm["returns"].plot(kind="kde",figsize=(16,6),label = "General Motors",alpha=0.8)
+tesla["returns"].plot(kind="kde", figsize=(16,6),label = "Tesla",alpha=0.8)
+plt.legend(loc=0)
+
+"""
+** Try also creating some box plots comparing the returns. **
+"""
+
+box_df = pd.concat([tesla["returns"],ford["returns"],gm["returns"]],axis=1)
+box_df.columns = ["Tesla Returns", "Ford Returns", "General Motor Returns"]
+box_df.plot(kind="box", figsize = (16,8))
+
+"""
+## Comparing Daily Returns between Stocks
+
+** Create a scatter matrix plot to see the correlation between each of the stocks daily returns. This helps answer the questions of how related the car companies are. Is Tesla begin treated more as a technology company rather than a car company by the market?*
+"""
+
+scatter_matrix(box_df,figsize=(16,16),alpha=0.6,hist_kwds={"bins":100});
+
+"""
+** It looks like Ford and GM do have some sort of possible relationship, let's plot just these two against eachother in scatter plot to view this more closely!**
+"""
+
+# GM-Ford Relationship
+box_df.plot(kind="scatter", x = "Ford Returns", y = "General Motor Returns",alpha = 0.5, figsize = (16,16), cmap = "twilight_shifted")
+
+"""
+____
+## Cumulative Daily Returns
+
+Great! Now we can see which stock was the most wide ranging in daily returns (you should have realized it was Tesla, our original stock price plot should have also made that obvious).
+
+With daily cumulative returns, the question we are trying to answer is the following, if I invested $1 in the company at the beginning of the time series, how much would is be worth today? This is different than just the stock price at the current day, because it will take into account the daily returns. Keep in mind, our simple calculation here won't take into account stocks that give back a dividend. Let's look at some simple examples:
+"""
+
+"""
+** Create a cumulative daily return column for each car company's dataframe.**
+"""
+
+ford["Cumulative Return"] = (1 + ford["returns"]).cumprod()
+gm["Cumulative Return"] = (1 + gm["returns"]).cumprod()
+tesla["Cumulative Return"] = (1 + tesla["returns"]).cumprod()
+
+"""
+** Now plot the Cumulative Return columns against the time series index. Which stock showed the highest return for a $1 invested? Which showed the lowest?**
+"""
+
+ford["Cumulative Return"].plot(label = "Ford", figsize=(16,8))
+gm["Cumulative Return"].plot(label = "General Motors", figsize=(16,8))
+tesla["Cumulative Return"].plot(label = "Tesla", figsize=(16,8))
+
+plt.legend(loc=0)
+
+# Highest Return = Tesla
+# Lowest Return = Ford
+
